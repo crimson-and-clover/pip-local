@@ -520,9 +520,12 @@ if __name__ == "__main__":
     while len(downloaded_package) > 0:
         p = downloaded_package.pop(0)
         result = parse_wheels_dependency(p)
-        required_packages = {
-            x["package_name"]: [x["package_version"]] for x in result if x["package_name"] != "setuptools"
-        }
+        for x in result:
+            if x["package_name"] == "setuptools":
+                continue
+            if x["package_name"] not in required_packages:
+                required_packages[x["package_name"]] = []
+            required_packages[x["package_name"]].append(x["package_version"])
         need_download_package = []
         for package_name in required_packages:
             package_index = get_package_index(package_name)
