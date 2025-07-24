@@ -520,6 +520,7 @@ if __name__ == "__main__":
     while len(downloaded_package) > 0:
         p = downloaded_package.pop(0)
         result = parse_wheels_dependency(p)
+        required_packages = {}
         for x in result:
             if x["package_name"] == "setuptools":
                 continue
