@@ -390,7 +390,7 @@ def get_suitable_package(package_data: list[dict],
                          package_name: str,
                          python_version: str,
                          required_packages: dict) -> list[dict]:
-    if "torch" in package_name:
+    if package_name in ["torch", "torchvision", "torchaudio"]:
         return get_suitable_torch_package_impl(package_data,
                                                package_name,
                                                python_version,
