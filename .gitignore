@@ -1,3 +1,4 @@
 /tmp
 /wheels
 *.log
+/test.py

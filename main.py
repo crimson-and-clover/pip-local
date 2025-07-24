@@ -1,17 +1,16 @@
+from copy import deepcopy
+from pathlib import Path
+import re
+import shutil
+import tempfile
 from typing import Callable
-import pkginfo
-import requests
+from typing import Dict, List
+
 from bs4 import BeautifulSoup
 from packaging.version import Version
-import concurrent.futures
-import tempfile
-import shutil
-import os
-from pathlib import Path
-import time
-from copy import deepcopy
+import pkginfo
+import requests
 from tqdm import tqdm
-import re
 
 INDEX_URL = "https://mirrors.aliyun.com/pypi/simple/"
 TORCH_FIND_LINKS_CU118 = "https://mirrors.aliyun.com/pytorch-wheels/cu118/"
@@ -22,10 +21,10 @@ TORCH_FIND_LINKS_CU128 = "https://mirrors.aliyun.com/pytorch-wheels/cu128/"
 PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
 
 REQUIRED_PACKAGES = {
-    "numpy": ["<2.0.0", "latest"],
-    "torch": ["==2.5.1", "latest"],
-    "torchvision": ["==0.20.1", "latest"],
-    "torchaudio": ["==2.5.1", "latest"],
+    "numpy": [["<2.0.0"], "latest"],
+    "torch": [["==2.5.1"], "latest"],
+    "torchvision": [["==0.20.1"], "latest"],
+    "torchaudio": [["==2.5.1"], "latest"],
     "opencv-python": ["latest"],
     "faiss-gpu": ["latest"],
     "flask": ["latest"],
@@ -247,19 +246,27 @@ def get_suitable_torch_package_impl(package_data: list[dict],
 
     required_versions = required_packages[package_name]
 
-    def filter_package_version(req_ver: str):
-        optor = ""
-        if req_ver[1] == "=":
-            optor = req_ver[0:2]
-            req_ver = req_ver[2:].strip()
-        else:
-            optor = req_ver[0]
-            req_ver = req_ver[1:].strip()
+    def filter_package_version(req_vers: List[str]):
+        rvs = []
+        for rv_str in req_vers:
+            optor = ""
+            if rv_str[1] == "=":
+                optor = rv_str[0:2]
+                rv_str = rv_str[2:].strip()
+
+            else:
+                optor = rv_str[0]
+                rv_str = rv_str[1:].strip()
+            rvs.append((optor, rv_str))
 
         def filter_package_version_func(x: dict) -> bool:
             ver_a = Version(x["package_version"].split("+")[0])
-            ver_b = Version(req_ver)
-            return eval(f"ver_a {optor} ver_b")
+            for rv in rvs:
+                optor, ver_b = rv
+                ver_b = Version(ver_b)
+                if not eval(f"ver_a {optor} ver_b"):
+                    return False
+            return True
 
         return filter_package_version_func
     for req_ver in required_versions:
@@ -329,21 +336,30 @@ def get_suitable_package_impl(package_data: list[dict],
 
     required_versions = required_packages[package_name]
 
-    def filter_package_version(req_ver: str):
-        optor = ""
-        if req_ver[1] == "=":
-            optor = req_ver[0:2]
-            req_ver = req_ver[2:].strip()
-        else:
-            optor = req_ver[0]
-            req_ver = req_ver[1:].strip()
+    def filter_package_version(req_vers: List[str]):
+        rvs = []
+        for rv_str in req_vers:
+            optor = ""
+            if rv_str[1] == "=":
+                optor = rv_str[0:2]
+                rv_str = rv_str[2:].strip()
+
+            else:
+                optor = rv_str[0]
+                rv_str = rv_str[1:].strip()
+            rvs.append((optor, rv_str))
 
         def filter_package_version_func(x: dict) -> bool:
             ver_a = Version(x["package_version"].split("+")[0])
-            ver_b = Version(req_ver)
-            return eval(f"ver_a {optor} ver_b")
+            for rv in rvs:
+                optor, ver_b = rv
+                ver_b = Version(ver_b)
+                if not eval(f"ver_a {optor} ver_b"):
+                    return False
+            return True
 
         return filter_package_version_func
+
     for req_ver in required_versions:
         if req_ver == "latest":
             if len(candidate_wheel) > 0 and len(candidate_tar_gz) > 0:
@@ -444,6 +460,49 @@ def download_package(data: dict) -> Path:
     return None
 
 
+def parse_wheels_dependency_str0(dep: str) -> Dict[str, List[str] | str]:
+    """
+    解析 wheels / requirements 风格的依赖声明，返回
+        {
+          "package_name": str,
+          "package_version": List[str] | "latest",
+        }
+    """
+    dep = dep.strip()
+    if not dep:
+        raise ValueError("Empty dependency string")
+
+    # 1️⃣ 提取包名（第一段连续的 [A‑Za‑z0‑9_‑]）
+    pkg_match = re.match(r"[A-Za-z0-9_\-]+", dep)
+    if not pkg_match:
+        raise ValueError(f"Cannot find package name in: {dep}")
+    package_name = pkg_match.group(0)
+
+    version_pat = re.compile(
+        r"""                   # 例:  (==1.2.3)  >=1.0   <2.0,>=1.5
+        [\s(]*             # 前导空白或左括号
+        (?P<constraint>    # 捕获整个约束串
+            (?:==|!=|~=|>=|<=|>|<)\s*[^,)\s]+  # 单个约束
+            (?:\s*,\s*(?:==|!=|~=|>=|<=|>|<)\s*[^,)\s]+)*  # 后续约束
+        )
+        [\s)]*             # 尾随空白或右括号
+        """,
+        re.VERBOSE,
+    )
+
+    # 2️⃣ 查找版本约束（可能在括号内，也可能直接跟在包名后）
+    version_match = version_pat.search(dep[len(package_name):])
+    if version_match:
+        constraints_str = version_match.group("constraint")
+        constraints = [c.strip()
+                       for c in constraints_str.split(",") if c.strip()]
+        version_part = constraints
+    else:
+        version_part = "latest"
+
+    return package_name, version_part
+
+
 def parse_wheels_dependency(filepath: Path) -> dict:
     pat_1 = re.compile(
         r"""^
@@ -474,12 +533,9 @@ def parse_wheels_dependency(filepath: Path) -> dict:
         }
         for i, s in enumerate(dep_sep):
             if i == 0:
-                match = pat_1.match(s)
-                if match:
-                    parse_result["package_name"] = match.group(
-                        "package_name")
-                    parse_result["package_version"] = match.group("version_paren") or \
-                        match.group("version_inline") or "latest"
+                package_name, version_part = parse_wheels_dependency_str0(s)
+                parse_result["package_name"] = package_name
+                parse_result["package_version"] = version_part
             else:
                 match = pat_2.match(s)
                 if match:
@@ -515,6 +571,19 @@ if __name__ == "__main__":
 
     # result = parse_wheels_dependency(
     #     Path("wheels\\torch-2.5.1+cu118-cp310-cp310-linux_x86_64.whl"))
+
+    # result = parse_wheels_dependency(
+    #     Path("wheels\\sympy-1.13.1-py3-none-any.whl"))
+
+    # TODO: fix sympy 1.13.1 dependency ['mpmath <1.4,>=1.1.0', "pytest >=7.1.0 ; extra == 'dev'", "hypothesis >=6.70.0 ; extra == 'dev'"]
+
+    # TEST CASE
+    # nvidia-nvtx-cu11 (==11.8.86)
+    # mpmath <1.4,>=1.1.0
+    # jinja2
+    # triton==3.3.1
+    # optree>=0.13.0
+    # triton (==3.1.0)
 
     print("Downloading dependencies...")
     while len(downloaded_package) > 0:
