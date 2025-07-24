@@ -53,7 +53,7 @@ REQUIRED_PACKAGES = {
 
 
 def get_package_index_impl(base_url: str, package_name: str) -> list[dict]:
-    url = f"{base_url}{package_name}"
+    url = f"{base_url}{package_name.lower()}"
     response = requests.get(url)
     response.raise_for_status()
     text = response.text
