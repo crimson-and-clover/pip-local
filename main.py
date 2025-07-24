@@ -7,7 +7,8 @@ from typing import Callable
 from typing import Dict, List
 
 from bs4 import BeautifulSoup
-from packaging.version import Version
+from packaging.version import Version, InvalidVersion
+from packaging.specifiers import SpecifierSet, InvalidSpecifier
 import pkginfo
 import requests
 from tqdm import tqdm
@@ -246,29 +247,26 @@ def get_suitable_torch_package_impl(package_data: list[dict],
 
     required_versions = required_packages[package_name]
 
-    def filter_package_version(req_vers: List[str]):
-        rvs = []
-        for rv_str in req_vers:
-            optor = ""
-            if rv_str[1] == "=":
-                optor = rv_str[0:2]
-                rv_str = rv_str[2:].strip()
+    def filter_package_version(req_vers: List[str]) -> Callable[[Dict], bool]:
+        """
+        req_vers 形如 ['!=8.3.*', '>=7.0']，返回一个布尔过滤函数。
+        """
+        # 直接把多个约束用逗号拼起来交给 SpecifierSet
+        try:
+            spec = SpecifierSet(",".join(req_vers))
+        except InvalidSpecifier as e:
+            raise ValueError(f"Bad version specifier: {e}")
 
-            else:
-                optor = rv_str[0]
-                rv_str = rv_str[1:].strip()
-            rvs.append((optor, rv_str))
+        def _checker(pkg: Dict) -> bool:
+            ver_str = pkg["package_version"].split("+", 1)[0]
+            try:
+                return Version(ver_str) in spec
+            except InvalidVersion:
+                print(f"Invalid version: {ver_str}")
+                return False
 
-        def filter_package_version_func(x: dict) -> bool:
-            ver_a = Version(x["package_version"].split("+")[0])
-            for rv in rvs:
-                optor, ver_b = rv
-                ver_b = Version(ver_b)
-                if not eval(f"ver_a {optor} ver_b"):
-                    return False
-            return True
+        return _checker
 
-        return filter_package_version_func
     for req_ver in required_versions:
         if req_ver == "latest":
             if len(candidate_wheel_cu118) > 0:
@@ -336,29 +334,25 @@ def get_suitable_package_impl(package_data: list[dict],
 
     required_versions = required_packages[package_name]
 
-    def filter_package_version(req_vers: List[str]):
-        rvs = []
-        for rv_str in req_vers:
-            optor = ""
-            if rv_str[1] == "=":
-                optor = rv_str[0:2]
-                rv_str = rv_str[2:].strip()
+    def filter_package_version(req_vers: List[str]) -> Callable[[Dict], bool]:
+        """
+        req_vers 形如 ['!=8.3.*', '>=7.0']，返回一个布尔过滤函数。
+        """
+        # 直接把多个约束用逗号拼起来交给 SpecifierSet
+        try:
+            spec = SpecifierSet(",".join(req_vers))
+        except InvalidSpecifier as e:
+            raise ValueError(f"Bad version specifier: {e}")
 
-            else:
-                optor = rv_str[0]
-                rv_str = rv_str[1:].strip()
-            rvs.append((optor, rv_str))
+        def _checker(pkg: Dict) -> bool:
+            ver_str = pkg["package_version"].split("+", 1)[0]
+            try:
+                return Version(ver_str) in spec
+            except InvalidVersion:
+                print(f"Invalid version: {ver_str}")
+                return False
 
-        def filter_package_version_func(x: dict) -> bool:
-            ver_a = Version(x["package_version"].split("+")[0])
-            for rv in rvs:
-                optor, ver_b = rv
-                ver_b = Version(ver_b)
-                if not eval(f"ver_a {optor} ver_b"):
-                    return False
-            return True
-
-        return filter_package_version_func
+        return _checker
 
     for req_ver in required_versions:
         if req_ver == "latest":
