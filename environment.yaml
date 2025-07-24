@@ -1,0 +1,11 @@
+name: pip-local
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+  - pip:
+      - pkginfo
+      - requests
+      - beautifulsoup4
+      - packaging
+      - tqdm
