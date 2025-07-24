@@ -197,7 +197,7 @@ def get_torch_package_index_impl(base_url: str, package_name: str) -> list[dict]
 
 
 def get_package_index(package_name: str) -> list[dict]:
-    if "torch" in package_name:
+    if package_name in ["torch", "torchvision", "torchaudio"]:
         return get_torch_package_index_impl(TORCH_FIND_LINKS_CU118, package_name) + \
             get_torch_package_index_impl(TORCH_FIND_LINKS_CU126, package_name) + \
             get_torch_package_index_impl(TORCH_FIND_LINKS_CU128, package_name)
