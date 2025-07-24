@@ -485,7 +485,7 @@ def parse_wheels_dependency(filepath: Path) -> dict:
                 if match:
                     parse_result["is_extra"] = match.group(
                         "extra_name") is not None
-        print(f"'{dep}' -> {parse_result}")
+        # print(f"'{dep}' -> {parse_result}")
         assert parse_result["package_name"] != ""
         assert parse_result["package_version"] != ""
         results.append(parse_result)
@@ -507,7 +507,7 @@ if __name__ == "__main__":
     downloaded_package = []
     for p in need_download_package:
         file_path = download_package(p)
-        if file_path is not None:
+        if file_path is not None and p["extension"] == "whl":
             downloaded_package.append(file_path)
 
     # result = parse_wheels_dependency(
@@ -531,5 +531,5 @@ if __name__ == "__main__":
             need_download_package += suitable_packages
         for p in need_download_package:
             file_path = download_package(p)
-            if file_path is not None:
+            if file_path is not None and p["extension"] == "whl":
                 downloaded_package.append(file_path)
