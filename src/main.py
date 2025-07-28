@@ -36,7 +36,8 @@ def check_package_dependency(pkg_dep: Dict, extra: List[str], py_env: Dict) -> b
 if __name__ == "__main__":
     # input
     req = {
-        "torch": "==2.5.1+cu118"
+        "torch": "==2.5.1+cu118",
+        "numpy": "latest",
     }
     py_ver = "3.12"
 
@@ -59,7 +60,8 @@ if __name__ == "__main__":
     req_pkg_names = list(new_req.keys())
     dep_pkg_names = []
     for pkg_name in req_pkg_names:
-        pkg_spec = new_req[pkg_name]
+        ver_spec = new_req[pkg_name]["package_version"]
+        pkg_extra = new_req[pkg_name]["package_extra"]
         pkg_index = get_wheel_index(pkg_name)
         best_match, candidate = get_suitable_package(
             pkg_name, pkg_index, ver_spec, compat_tags)
@@ -71,7 +73,7 @@ if __name__ == "__main__":
                     f"Package requires python version {py_dep}, but current python version is {py_env}")
             req_deps = []
             for pkg_dep in pkg_deps:
-                if check_package_dependency(pkg_dep, pkg_spec["package_extra"], py_env):
+                if check_package_dependency(pkg_dep, pkg_extra, py_env):
                     req_deps.append(pkg_dep)
 
             print(
