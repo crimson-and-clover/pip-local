@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 
 
 def get_python_environment(python_version: str) -> Dict[str, str]:
+    # from packaging.markers import default_environment
     envs = {
         "implementation_name": "cpython",
         "os_name": "posix",
