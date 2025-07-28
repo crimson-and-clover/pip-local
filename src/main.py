@@ -35,11 +35,19 @@ def check_package_dependency(pkg_dep: Dict, extra: List[str], py_env: Dict) -> b
 
 if __name__ == "__main__":
     # input
+    # large package file that too slow to download
     req = {
         "torch": "==2.5.1+cu118",
-        "numpy": "latest",
+        "numpy": "<2.0.0",
+        # "numpy": "latest",
+        "opencv-python": "<4.12",
+        # "opencv-python": "latest",
+        # "faiss-gpu": "latest",
+        "open3d": "latest",
+        "gradio": "latest",
     }
-    py_ver = "3.12"
+    # py_ver = "3.12"
+    py_ver = "3.10"
 
     # process
     new_req = {}
