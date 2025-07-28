@@ -38,6 +38,9 @@ if __name__ == "__main__":
     # large package file that too slow to download
     req = {
         "torch": "==2.5.1+cu118",
+        "torchvision": "==0.20.1+cu118",
+        # "torchvision": "==0.22.1+cu118",
+        "torchaudio": "==2.5.1+cu118",
         "numpy": "<2.0.0",
         # "numpy": "latest",
         "opencv-python": "<4.12",
