@@ -2,3 +2,5 @@
 /wheels
 *.log
 /test.py
+/index
+/**/__pycache__
