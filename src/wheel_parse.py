@@ -1,9 +1,9 @@
 from pathlib import Path
 import re
 from typing import Dict, List
-from packaging.specifiers import SpecifierSet, Version
-from packaging.markers import Marker, default_environment
 
+from packaging.markers import Marker, default_environment
+from packaging.specifiers import SpecifierSet, Version
 import pkginfo
 
 

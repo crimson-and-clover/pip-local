@@ -3,15 +3,7 @@ from pathlib import Path
 import sysconfig
 from typing import List
 
-from packaging.tags import (
-    Tag,
-    compatible_tags,
-    cpython_tags,
-    interpreter_name,
-    interpreter_version,
-    platform_tags,
-    sys_tags,
-)
+from packaging.tags import compatible_tags, cpython_tags, platform_tags
 
 
 def dump_platforms():

@@ -1,24 +1,15 @@
 from copy import deepcopy
 from functools import reduce
-from pathlib import Path
-import re
-import shutil
-import tempfile
-from typing import Callable
 from typing import Dict, List
 
-from bs4 import BeautifulSoup
-from packaging.tags import sys_tags
-from packaging.version import Version, InvalidVersion
-from packaging.specifiers import SpecifierSet, InvalidSpecifier
-import pkginfo
-import requests
-from tqdm import tqdm
-from wheel_index import get_wheel_index, get_suitable_package
-from python_environment import get_python_environment
-from wheel_tags import get_compat_wheel_tags, load_linux_x86_64_platforms
-from wheel_parse import parse_wheels_dependency, parse_package_version_str
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
+
 from downloader import download_package
+from python_environment import get_python_environment
+from wheel_index import get_suitable_package, get_wheel_index
+from wheel_parse import parse_package_version_str, parse_wheels_dependency
+from wheel_tags import get_compat_wheel_tags, load_linux_x86_64_platforms
 
 
 def check_package_dependency(pkg_dep: Dict, extra: List[str], py_env: Dict) -> bool:

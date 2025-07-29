@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict
 
 
 def get_python_environment(python_version: str) -> Dict[str, str]:
